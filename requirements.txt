@@ -1,7 +1,7 @@
 Django>=5.2.18,<5.3
 openpyxl>=3.1.5,<4
 psycopg[binary]>=3.2,<4
-python-dotenv>=1.0,<2
+python-dotenv>=1.2.4,<2
 whitenoise>=6.8,<7
 waitress>=3.0,<4
 defusedxml>=0.7.1,<1
