@@ -1,0 +1,2 @@
+{% extends 'base.html' %}{% block title %}{{ title }}{% endblock %}
+{% block content %}<section class="panel empty-state"><span class="eyebrow">{{ code }}</span><h1>{{ title }}</h1><p>{{ description }}</p><a class="btn btn-primary" href="{% url 'core:dashboard' %}">Voltar ao início</a></section>{% endblock %}

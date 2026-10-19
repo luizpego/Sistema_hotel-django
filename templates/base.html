@@ -1,0 +1,45 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#143f3a"><meta name="robots" content="noindex,nofollow">
+  <title>{% block title %}Gestão do hotel{% endblock %} · São João Evangelista</title>
+  <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/hotel.css' %}">
+  <script defer src="{% static 'js/hotel.js' %}"></script>
+</head>
+<body>
+<a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+{% if user.is_authenticated %}
+<aside class="sidebar" id="menu-principal">
+  <a class="brand" href="{% url 'core:dashboard' %}" aria-label="Hotel São João Evangelista, início"><span class="brand-symbol" aria-hidden="true">S<span>J</span></span><span>São João Evangelista<small>GESTÃO DO HOTEL</small></span></a>
+  <button class="mobile-toggle" type="button" aria-expanded="false" aria-controls="navigation"><span aria-hidden="true">☰</span> <span>Menu</span></button>
+  <nav id="navigation" aria-label="Navegação principal">
+    <span class="nav-label">DIA A DIA</span>
+    {% if is_reception %}
+    <a href="{% url 'core:dashboard' %}" {% if request.resolver_match.app_name == 'core' %}aria-current="page"{% endif %}><span aria-hidden="true">▦</span> Visão geral</a>
+    <a href="{% url 'reservas:list' %}" {% if request.resolver_match.app_name == 'reservas' %}aria-current="page"{% endif %}><span aria-hidden="true">▤</span> Reservas e hospedagens</a>
+    <a href="{% url 'hospedes:list' %}" {% if request.resolver_match.app_name == 'hospedes' %}aria-current="page"{% endif %}><span aria-hidden="true">♙</span> Hóspedes</a>
+    <a href="{% url 'quartos:list' %}" {% if request.resolver_match.app_name == 'quartos' %}aria-current="page"{% endif %}><span aria-hidden="true">▥</span> Quartos</a>
+    {% endif %}
+    {% if is_manager or is_cleaning %}<a href="{% url 'quartos:cleaning' %}"><span aria-hidden="true">✧</span> Limpeza dos quartos</a>{% endif %}
+    {% if is_manager %}<span class="nav-label">GESTÃO</span><a href="{% url 'financeiro:summary' %}" {% if request.resolver_match.app_name == 'financeiro' %}aria-current="page"{% endif %}><span aria-hidden="true">＄</span> Financeiro</a>{% endif %}
+    {% if is_reception %}<a href="{% url 'relatorios:index' %}" {% if request.resolver_match.app_name == 'relatorios' %}aria-current="page"{% endif %}><span aria-hidden="true">⇩</span> Relatórios e Excel</a>{% endif %}
+    {% if is_manager %}<a href="{% url 'usuarios:list' %}"><span aria-hidden="true">⚙</span> Funcionários</a>{% endif %}
+    <div class="sidebar-help"><strong>Um atendimento de cada vez.</strong><span>As informações ficam salvas para o próximo turno.</span></div>
+  </nav>
+  <div class="sidebar-location"><span aria-hidden="true">⌖</span> São João Evangelista, MG</div>
+</aside>
+<div class="app-shell">
+<header class="topbar"><span class="topbar-caption">Cuidar bem começa por aqui.</span><div class="user-menu"><span><strong>{{ user.get_full_name|default:user.username }}</strong><small>{{ user.get_role_display }}</small></span><a class="account-link" href="{% url 'usuarios:password' %}">Trocar senha</a><form method="post" action="{% url 'usuarios:logout' %}">{% csrf_token %}<button class="btn btn-outline-secondary btn-sm">Sair</button></form></div></header>
+{% else %}<div class="public-shell">{% endif %}
+<main id="conteudo" tabindex="-1">
+  {% if messages %}<div class="messages" aria-live="polite">{% for message in messages %}<div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %}" role="status">{{ message }}</div>{% endfor %}</div>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+{% if user.is_authenticated %}<footer class="app-footer">Hotel São João Evangelista <span>Simples para usar. Pronto para receber.</span></footer>{% endif %}
+</div>
+</body>
+</html>
