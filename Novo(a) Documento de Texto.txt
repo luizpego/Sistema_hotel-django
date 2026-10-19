@@ -1,0 +1,437 @@
+PROMPT — Sistema Completo de Gestão Hoteleira com Django e PostgreSQL
+
+Atue como um desenvolvedor de software sênior, especialista em Python, Django, PostgreSQL, sistemas de gestão hoteleira, segurança web e geração de relatórios Excel.
+
+Desenvolva um sistema web completo para administrar um único hotel localizado em São João Evangelista, Minas Gerais, Brasil.
+
+O sistema deve ser funcional, organizado, seguro, responsivo e preparado para uso real. Não crie apenas protótipos ou telas estáticas: implemente o backend, banco de dados, regras de negócio, interface, relatórios e documentação para instalação.
+
+1. Tecnologias obrigatórias
+
+Utilize:
+
+Python 3.12 ou versão estável compatível.
+Django 5.2 LTS ou versão estável compatível.
+PostgreSQL como banco de dados principal.
+Django ORM para consultas e operações no banco.
+HTML5, CSS3, Bootstrap 5 e JavaScript.
+Django Templates para renderização das páginas.
+openpyxl para exportação de arquivos Excel .xlsx.
+CSV nativo do Python para exportação de arquivos .csv.
+Pillow para processamento de imagens, caso necessário.
+pytest ou Django TestCase para testes automatizados.
+Git para controle de versão.
+Docker e Docker Compose como opção para facilitar a instalação.
+
+Prefira bibliotecas estáveis e compatíveis entre si. Não utilize SQLite como banco principal. SQLite pode ser usado somente em testes isolados, se necessário, mas a configuração principal deve ser PostgreSQL.
+
+2. Objetivo do sistema
+
+Criar um sistema de gestão para um único hotel, com três perfis principais:
+
+Proprietário ou administrador.
+Funcionários da recepção.
+Clientes que acessam o site público para consultar disponibilidade e solicitar reservas.
+
+O sistema deve centralizar todas as informações em um único banco PostgreSQL.
+
+O idioma da interface será português brasileiro (pt-BR), a moeda será o real brasileiro (R$), as datas deverão seguir o padrão brasileiro na interface e o fuso horário será America/Sao_Paulo.
+
+3. Painel administrativo
+
+Crie um dashboard moderno com:
+
+Total de quartos cadastrados.
+Quartos disponíveis, ocupados e em manutenção.
+Check-ins previstos para hoje.
+Check-outs previstos para hoje.
+Reservas pendentes de confirmação.
+Total recebido no período selecionado.
+Valores pendentes de pagamento.
+Despesas registradas.
+Indicadores de ocupação.
+Gráficos de faturamento e ocupação.
+Atalhos para cadastrar hóspedes, criar reservas e registrar pagamentos.
+
+Os indicadores devem ser calculados com dados reais do banco de dados, não com valores fixos.
+
+4. Gestão de quartos
+
+Implemente:
+
+Cadastro, edição e desativação de quartos.
+Número ou identificação única do quarto.
+Categoria: individual, duplo, triplo, suíte ou outras categorias configuráveis.
+Capacidade máxima de hóspedes.
+Valor da diária.
+Descrição e comodidades.
+Fotos dos quartos.
+Situação operacional: disponível, manutenção ou inativo.
+Histórico de ocupação.
+Calendário de disponibilidade.
+
+Não permita que o mesmo quarto tenha duas reservas confirmadas com períodos conflitantes.
+
+A disponibilidade deve considerar as datas de entrada e saída, o estado da reserva e os bloqueios de manutenção.
+
+5. Cadastro e gestão de hóspedes
+
+Implemente:
+
+Nome completo.
+Telefone.
+E-mail.
+Dados cadastrais estritamente necessários.
+Histórico de reservas.
+Histórico de pagamentos.
+Saldo pendente por hospedagem.
+Pesquisa por nome, telefone, quarto ou período.
+
+Proteja documentos e dados pessoais. Não exiba informações privadas de hóspedes em páginas públicas. A coleta de documentos deverá ser configurável e observar a LGPD.
+
+6. Sistema de reservas
+
+Permita que funcionários criem reservas manualmente e que clientes solicitem reservas pelo site.
+
+Cada reserva deve conter:
+
+Código único de identificação.
+Hóspede responsável.
+Quarto reservado.
+Data de entrada.
+Data de saída.
+Quantidade de hóspedes.
+Valor da diária.
+Quantidade de noites.
+Descontos e taxas, quando aplicáveis.
+Valor total.
+Total pago.
+Saldo devido.
+Status da reserva.
+Observações.
+Data de criação.
+
+Implemente os estados: pendente, confirmada, hospedado, concluída e cancelada.
+
+Calcule o valor total com base no preço aplicável a cada noite, com suporte futuro a tarifas sazonais.
+
+Use transações atômicas do Django e restrições apropriadas no PostgreSQL para evitar reservas duplicadas em operações simultâneas. A validação deve ocorrer no servidor, nunca apenas no JavaScript.
+
+Configure as regras de cancelamento, alteração de datas e reembolso.
+
+7. Site público para clientes
+
+Crie um site responsivo com:
+
+Página inicial do hotel.
+Nome, endereço, contatos e localização.
+Galeria de fotos.
+Categorias de quartos.
+Descrições, comodidades e preços.
+Formulário de consulta de disponibilidade.
+Seleção de entrada, saída e quantidade de hóspedes.
+Exibição de preço total e regras da hospedagem.
+Formulário para solicitar reserva.
+Código de acompanhamento da reserva.
+Página de confirmação e instruções de pagamento.
+Política de privacidade e cancelamento.
+
+Os clientes não poderão acessar o painel administrativo.
+
+Não revele informações pessoais de outros hóspedes nem a lista completa de reservas.
+
+Comece com reservas pendentes de confirmação pela equipe. Prepare a arquitetura para adicionar pagamento online via PIX e cartão posteriormente, utilizando um provedor de pagamentos oficial e verificando os webhooks no servidor.
+
+Não simule pagamentos aprovados.
+
+8. Controle financeiro
+
+Implemente:
+
+Registro de pagamentos parciais e integrais.
+Métodos de pagamento: PIX, dinheiro, cartão e transferência.
+Data e valor de cada pagamento.
+Referência da transação, quando houver.
+Registro de despesas.
+Categoria das despesas.
+Data e descrição.
+Histórico de movimentações.
+Saldo pendente por reserva.
+Total recebido por período.
+Despesas por período.
+Fluxo financeiro por período.
+Relatório de inadimplência.
+
+Utilize DecimalField no Django para valores monetários. Nunca utilize números de ponto flutuante para cálculos financeiros.
+
+Não permita que pagamentos duplicados sejam registrados acidentalmente. Implemente mecanismos de idempotência quando houver integração com gateways.
+
+Estornos e reembolsos devem ser registrados com histórico, sem apagar os lançamentos originais.
+
+9. Banco de dados PostgreSQL
+
+Projete os modelos Django com relacionamentos adequados.
+
+Inclua pelo menos os seguintes modelos:
+
+User: usuários, autenticação e perfis.
+Guest: hóspedes.
+RoomType: categorias de quartos.
+Room: quartos.
+Reservation: reservas.
+Payment: pagamentos.
+Expense: despesas.
+MaintenanceBlock: bloqueios de manutenção.
+HotelSettings: configurações do hotel.
+AuditLog: registros de ações importantes.
+
+Utilize chaves primárias, chaves estrangeiras, índices, restrições de integridade e migrations do Django.
+
+Adicione índices para consultas frequentes por:
+
+Datas de entrada e saída.
+Status de reservas.
+Hóspedes.
+Quartos.
+Datas de pagamento.
+Datas de despesas.
+
+Não armazene todos os dados em uma única tabela. Separe hóspedes, quartos, reservas, pagamentos e despesas.
+
+Implemente as migrations necessárias e forneça comandos para criar e atualizar o banco de dados.
+
+10. Relatórios completos exportáveis
+
+Crie uma área de relatórios com filtros de data inicial, data final, quarto, cliente e situação financeira.
+
+O Excel deve conter as seguintes abas:
+
+Aba 1 — Hóspedes e hospedagens
+
+Colunas:
+
+Código da reserva.
+Cliente.
+Telefone, conforme permissão.
+Quarto.
+Entrada.
+Saída.
+Quantidade de noites.
+Status da reserva.
+Valor total.
+Valor pago.
+Valor devido.
+Situação financeira.
+Aba 2 — Clientes devedores
+
+Exiba somente as reservas não canceladas que possuam saldo positivo.
+
+Colunas:
+
+Cliente.
+Telefone, conforme permissão.
+Código da reserva.
+Quarto.
+Entrada.
+Saída.
+Valor total.
+Valor pago.
+Valor devido.
+
+Ordene pelos maiores saldos devedores.
+
+Aba 3 — Histórico de pagamentos
+
+Colunas:
+
+Código do pagamento.
+Data.
+Cliente.
+Reserva.
+Quarto.
+Método.
+Valor.
+Referência.
+Aba 4 — Resumo financeiro
+
+Inclua:
+
+Valor contratado das hospedagens selecionadas.
+Recebimentos efetivos no período.
+Saldo pendente das hospedagens selecionadas.
+Despesas no período.
+Fluxo financeiro líquido do período.
+Quantidade de reservas.
+Quantidade de reservas pendentes.
+Quantidade de hóspedes hospedados.
+
+Defina claramente os períodos utilizados em cada indicador. Não some valores contratados como se fossem receitas já recebidas.
+
+Aba 5 — Quartos
+
+Inclua:
+
+Número do quarto.
+Categoria.
+Capacidade.
+Diária padrão.
+Situação operacional.
+Aba 6 — Despesas
+
+Inclua:
+
+Código.
+Data.
+Descrição.
+Categoria.
+Valor.
+Observações.
+Exportação CSV
+
+Permita exportar cada relatório separadamente em CSV compatível com Excel, utilizando UTF-8 com BOM e separador adequado à configuração brasileira.
+
+Crie botões para:
+
+Exportar todos os relatórios em um arquivo Excel .xlsx.
+Exportar hóspedes e hospedagens em CSV.
+Exportar devedores em CSV.
+Exportar pagamentos em CSV.
+Exportar despesas em CSV.
+Exportar quartos em CSV.
+Exportar o resumo financeiro em CSV.
+
+O arquivo Excel deverá ter cabeçalhos formatados, filtros, primeira linha congelada, larguras de coluna adequadas e valores monetários formatados em reais.
+
+Os arquivos deverão ser gerados a partir de consultas reais ao PostgreSQL, nunca de dados fictícios.
+
+Implemente proteção contra CSV Formula Injection, especialmente para campos textuais iniciados por =, +, - ou @.
+
+A exportação deve exigir autenticação e autorização. Clientes públicos não podem baixar relatórios internos.
+
+11. Segurança e permissões
+
+Implemente:
+
+Autenticação com o sistema de usuários do Django.
+Controle de acesso baseado em perfis.
+Permissões por visualização, criação, edição, cancelamento e exportação.
+Proteção CSRF.
+Validação de dados no servidor.
+Proteção contra SQL Injection utilizando Django ORM ou parâmetros SQL.
+Cookies de sessão seguros em produção.
+HTTPS em produção.
+Proteção contra tentativas excessivas de login.
+Variáveis de ambiente para senhas e segredos.
+Registro de operações administrativas importantes.
+Política de backup e restauração do PostgreSQL.
+Proteção das imagens enviadas.
+Política de privacidade adequada à LGPD.
+
+O proprietário terá acesso completo. Funcionários terão apenas as permissões atribuídas. Clientes acessarão somente suas próprias reservas.
+
+Não confie em IDs enviados pelo navegador para autorizar o acesso a reservas ou pagamentos.
+
+12. Interface e experiência do usuário
+
+Desenvolva uma interface profissional, moderna e responsiva.
+
+Utilize:
+
+Menu lateral no painel administrativo.
+Dashboard com indicadores.
+Tabelas com pesquisa, ordenação e paginação.
+Formulários com validação e mensagens claras.
+Calendário de reservas.
+Filtros de datas.
+Botões de exportação claramente identificados.
+Confirmação antes de cancelamentos.
+Mensagens de sucesso e erro.
+Layout adaptado a computadores e celulares.
+Idioma português brasileiro.
+
+Evite páginas excessivamente carregadas e priorize a facilidade de uso pela equipe da recepção.
+
+13. Organização do projeto
+
+Organize o código em aplicativos Django, por exemplo:
+
+accounts: usuários, autenticação e permissões.
+guests: hóspedes.
+rooms: categorias e quartos.
+reservations: reservas e disponibilidade.
+finance: pagamentos e despesas.
+reports: relatórios e exportação.
+core: configurações gerais e dashboard.
+public_site: site e reservas dos clientes.
+
+Crie uma estrutura de pastas clara, com templates, arquivos estáticos, formulários, serviços, testes, migrations e documentação.
+
+Não coloque todas as regras de negócio em uma única view.
+
+14. Testes automatizados
+
+Implemente testes para:
+
+Criação e edição de hóspedes.
+Cadastro de quartos.
+Cálculo de noites e valores.
+Pagamentos parciais e integrais.
+Cálculo de saldo devedor.
+Cancelamento e reembolso.
+Reservas conflitantes.
+Tentativas simultâneas de reservar o mesmo quarto.
+Controle de permissões.
+Isolamento de dados entre clientes.
+Exportação Excel com as seis abas.
+Exportação CSV com acentuação correta.
+Filtros por período.
+Relatórios vazios.
+Segurança dos arquivos exportados.
+
+Utilize testes de integração com PostgreSQL para validar restrições e concorrência.
+
+15. Entregáveis obrigatórios
+
+Entregue:
+
+Código-fonte completo do projeto.
+Estrutura de diretórios.
+Todos os modelos Django.
+Formulários, views, URLs e templates.
+Migrations do banco.
+Consultas e serviços de relatórios.
+Exportação funcional para XLSX e CSV.
+Testes automatizados.
+Arquivo requirements.txt ou configuração equivalente de dependências.
+Arquivo .env.example sem credenciais reais.
+Dockerfile e docker-compose.yml, se utilizar Docker.
+Comandos para instalação e execução.
+Comandos para migrar e criar o primeiro administrador.
+Dados de demonstração claramente identificados como fictícios.
+Documentação para backup e restauração.
+Instruções para publicar o sistema em produção.
+16. Forma de execução do trabalho
+
+Desenvolva o projeto por etapas, mantendo o código executável ao final de cada etapa:
+
+Etapa 1: estrutura do projeto e conexão PostgreSQL.
+
+Etapa 2: autenticação, perfis e permissões.
+
+Etapa 3: hóspedes, quartos e reservas.
+
+Etapa 4: pagamentos, despesas e cálculos financeiros.
+
+Etapa 5: site público e solicitações de reserva.
+
+Etapa 6: relatórios SQL e exportações Excel/CSV.
+
+Etapa 7: testes, segurança, documentação e publicação.
+
+Antes de finalizar, execute os testes disponíveis, corrija os erros encontrados e informe o que foi efetivamente testado.
+
+Não declare que o sistema está pronto ou funcionando se o código não tiver sido executado e validado.
+
+Comece apresentando a arquitetura e a estrutura de diretórios. Em seguida, implemente os arquivos completos, com código executável, sem omitir partes essenciais nem utilizar pseudocódigo.
+
+O resultado deve ser um sistema de gestão hoteleira real, com PostgreSQL, Django, relatórios completos e exportação de Excel e CSV, pronto para ser configurado para o hotel de São João Evangelista, MG.
