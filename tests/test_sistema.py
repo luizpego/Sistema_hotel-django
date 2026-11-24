@@ -8,6 +8,7 @@ from decimal import Decimal
 from html.parser import HTMLParser
 from pathlib import Path
 from threading import Barrier
+from unittest.mock import patch
 
 if not os.getenv('DB_NAME', '').startswith('test_'):
     raise RuntimeError('Testes precisam de banco descartável com nome iniciado por test_.')
@@ -281,6 +282,61 @@ class SistemaTest(unittest.TestCase):
         html = self.client.get('/clientes').get_data(as_text=True)
         self.assertIn('&lt;script&gt;', html)
         self.assertNotIn('<script>alert(1)</script>', html)
+
+    def test_admin_inicial_idempotente_sem_senha_no_codigo(self):
+        runner = app.test_cli_runner()
+        with patch.dict(os.environ, {'ADMIN_INITIAL_LOGIN': 'inicial', 'ADMIN_INITIAL_PASSWORD': ''}):
+            self.assertNotEqual(runner.invoke(args=['criar-admin']).exit_code, 0)
+        with patch.dict(os.environ, {'ADMIN_INITIAL_LOGIN': 'inicial', 'ADMIN_INITIAL_PASSWORD': self.senha}):
+            self.assertEqual(runner.invoke(args=['criar-admin']).exit_code, 0)
+        usuario = consultar("SELECT * FROM usuarios WHERE login='inicial'")[0]
+        self.assertEqual(usuario['perfil'], 'admin')
+        self.assertNotEqual(usuario['senha_hash'], self.senha)
+        self.entrar('inicial', app.test_client())
+        with patch.dict(os.environ, {'ADMIN_INITIAL_LOGIN': 'inicial', 'ADMIN_INITIAL_PASSWORD': 'OutraSenhaFicticia123!'}):
+            resultado = runner.invoke(args=['criar-admin'])
+        self.assertIn('preservados', resultado.output)
+        self.assertEqual(consultar('SELECT senha_hash FROM usuarios WHERE id=%s', (usuario['id'],))[0]['senha_hash'], usuario['senha_hash'])
+        with patch.dict(os.environ, {'ADMIN_INITIAL_LOGIN': 'recepcao', 'ADMIN_INITIAL_PASSWORD': self.senha}):
+            runner.invoke(args=['criar-admin'])
+        self.assertEqual(consultar("SELECT perfil FROM usuarios WHERE login='recepcao'")[0]['perfil'], 'recepcao')
+
+    def test_dashboard_modelo_html_e_ocupacao_real(self):
+        cliente, quarto, _ = self.cadastrar()
+        r = self.reservar(cliente, quarto)
+        html = self.client.get('/').get_data(as_text=True)
+        self.assertEqual(html.count('<article class="stat">'), 4)
+        self.assertRegex(html, r'id="hospedagens-ativas">0<')
+        self.assertRegex(html, r'id="quartos-livres">1<')
+        self.assertIn('Banco conectado', html)
+        self.postar(f"/reservas/{r['id']}/checkin")
+        html = self.client.get('/').get_data(as_text=True)
+        self.assertRegex(html, r'id="hospedagens-ativas">1<')
+        self.assertRegex(html, r'id="quartos-livres">0<')
+
+    def test_relatorios_mensal_anual_personalizado_e_grafico(self):
+        cliente, quarto, _ = self.cadastrar()
+        r = self.reservar(cliente, quarto)
+        self.postar('/pagamentos', {'reserva_id': r['id'], 'valor': '100.50', 'forma': 'PIX', 'status': 'Pago'})
+        self.postar('/pagamentos', {'reserva_id': r['id'], 'valor': '50', 'forma': 'PIX', 'status': 'Pendente'})
+        executar("UPDATE pagamentos SET recebido_em='2024-02-29 12:00:00' WHERE status='Pago'")
+        mensal = self.client.get('/relatorios?tipo=mes&ano=2024&mes=2').get_data(as_text=True)
+        self.assertIn('29/02/2024', mensal)
+        self.assertIn('R$ 100,50', mensal)
+        self.assertIn('R$ 50,00', mensal)
+        self.assertEqual(mensal.count('<progress '), 1)
+        anual = self.client.get('/relatorios?tipo=ano&ano=2024').get_data(as_text=True)
+        self.assertEqual(anual.count('<progress '), 12)
+        self.assertIn('31/12/2024', anual)
+        self.assertIn('imprimir-relatorio', anual)
+        outro_mes = self.client.get('/relatorios?tipo=mes&ano=2024&mes=3').get_data(as_text=True)
+        self.assertNotIn('R$ 100,50', outro_mes)
+        self.assertIn('R$ 50,00', outro_mes)
+        personalizado = self.client.get('/relatorios?tipo=personalizado&inicio=2024-02-29&fim=2024-02-29').get_data(as_text=True)
+        self.assertIn('R$ 100,50', personalizado)
+        self.assertEqual(self.client.get('/relatorios?tipo=ano&ano=0', follow_redirects=True).status_code, 200)
+        self.assertEqual(self.client.get('/relatorios?tipo=personalizado&inicio=9999-12-01&fim=9999-12-30').status_code, 200)
+        self.assertEqual(self.client.get('/static/interface.js').status_code, 200)
 
 
 if __name__ == '__main__':

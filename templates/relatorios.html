@@ -1,9 +1,59 @@
 {% extends 'base.html' %}
 {% block conteudo %}
-<div class="page-heading"><div><div class="eyebrow">Gestão e resultados</div><h1>Relatórios</h1><p class="subtitle">Consulte os recebimentos por período e as pendências em aberto.</p></div></div>
-<form class="card filter-grid" method="get"><div class="field"><label for="inicio">Data inicial</label><input id="inicio" name="inicio" type="date" value="{{ inicio }}" required></div><div class="field"><label for="fim">Data final</label><input id="fim" name="fim" type="date" value="{{ fim }}" required></div><button class="button">Gerar relatório</button></form>
-<div class="actions section-gap"><a class="button secondary" href="{{ url_for('relatorios',inicio=inicio,fim=fim,formato='csv') }}">Exportar CSV</a></div>
-<p class="balance-note section-gap">Período: {{ data_br(inicio) }} a {{ data_br(fim) }}. As pendências incluem todos os pagamentos registrados como pendentes, independentemente do período. Valores ainda não lançados em pagamentos não entram nessa soma.</p>
-<div class="stats">{% for icone,nome,valor in [('＄','Recebido no período',moeda(recebido)),('!','Pagamentos pendentes',moeda(pendente)),('▦','Quartos ocupados agora',resumo.ocupados),('⌂','Quartos livres agora',resumo.livres)] %}<article class="stat"><div class="stat-icon">{{ icone }}</div><div><div class="stat-label">{{ nome }}</div><div class="stat-value">{{ valor }}</div></div></article>{% endfor %}</div>
-<article class="card"><div class="card-heading"><h2>Movimentações e pendências</h2></div><div class="table-wrap"><table><thead><tr><th>Pagamento</th><th>Hóspede</th><th>Reserva</th><th>Valor</th><th>Forma</th><th>Recebido em</th><th>Status</th></tr></thead><tbody>{% for p in pagamentos %}<tr><td>#{{ p.id }}</td><td class="primary-cell">{{ p.cliente }}</td><td>#{{ p.reserva_id }}</td><td>{{ moeda(p.valor) }}</td><td>{{ p.forma }}</td><td>{{ data_br(p.recebido_em) }}</td><td><span class="badge {{ 'pending' if p.status == 'Pendente' else '' }}">{{ p.status }}</span></td></tr>{% else %}<tr><td colspan="7" class="empty">Nenhum recebimento no período ou pendência registrada.</td></tr>{% endfor %}</tbody></table></div></article>
+<div class="page-heading">
+  <div><div class="eyebrow">Gestão e resultados</div><h1>Relatórios</h1>
+    <p class="subtitle">Acompanhe recebimentos, pendências e a operação do hotel por período.</p>
+  </div>
+</div>
+<form class="card" id="form-relatorio" method="get">
+  <div class="report-filters">
+    <div class="field"><label for="relatorio-tipo">Período</label>
+      <select id="relatorio-tipo" name="tipo">
+        {% for valor, nome in [('mes','Mensal'),('ano','Anual'),('personalizado','Personalizado')] %}
+        <option value="{{ valor }}" {{ 'selected' if tipo == valor else '' }}>{{ nome }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field" id="campo-mes"><label for="relatorio-mes">Mês</label>
+      <select id="relatorio-mes" name="mes">{% for nome in meses %}<option value="{{ loop.index }}" {{ 'selected' if mes == loop.index else '' }}>{{ nome }}</option>{% endfor %}</select>
+    </div>
+    <div class="field" id="campo-ano"><label for="relatorio-ano">Ano</label><input id="relatorio-ano" name="ano" type="number" min="1000" max="9998" value="{{ ano }}"></div>
+    <div class="field" id="campo-inicio"><label for="relatorio-inicio">Data inicial</label><input id="relatorio-inicio" name="inicio" type="date" value="{{ inicio }}"></div>
+    <div class="field" id="campo-fim"><label for="relatorio-fim">Data final</label><input id="relatorio-fim" name="fim" type="date" value="{{ fim }}"></div>
+  </div>
+  <div class="report-actions">
+    <button class="button" type="submit">Gerar relatório</button>
+    <a class="button secondary" id="relatorio-csv" href="{{ url_for('relatorios',inicio=inicio,fim=fim,formato='csv') }}">Exportar CSV</a>
+    <button class="button secondary" id="imprimir-relatorio" type="button">Imprimir</button>
+  </div>
+</form>
+<div id="relatorio-conteudo" aria-live="polite">
+  <p class="report-note section-gap">Período: {{ data_br(inicio) }} a {{ data_br(fim) }}. As pendências mostram todos os pagamentos ainda não recebidos, independentemente do período. Valores ainda não lançados em pagamentos não entram nessa soma.</p>
+  <div class="stats report-stats">
+    {% for icone,nome,valor in [('＄','Total recebido no período',moeda(recebido)),('!','Total pendente',moeda(pendente)),('✓','Recebimentos no período',pagos|length),('…','Pagamentos pendentes',pendencias|length),('＋','Entradas no período',operacao.entradas or 0),('−','Saídas no período',operacao.saidas or 0),('⌂','Hospedagens ativas agora',resumo.hospedagens),('▦','Quartos ocupados / livres',(resumo.ocupados|string) ~ ' / ' ~ (resumo.livres|string))] %}
+    <article class="stat"><div class="stat-icon" aria-hidden="true">{{ icone }}</div><div><div class="stat-label">{{ nome }}</div><div class="stat-value">{{ valor }}</div></div></article>
+    {% endfor %}
+  </div>
+  <article class="card section-gap">
+    <div class="card-heading"><div><h2>Recebimentos por mês</h2><span class="card-hint">Valores contabilizados pela data em que o pagamento foi recebido</span></div></div>
+    <div class="report-chart">
+      {% for item in receita_mensal %}
+      <div class="chart-row">
+        <span title="{{ meses[item.mes - 1] }} de {{ item.ano }}">{{ item.rotulo }}</span>
+        <progress class="chart-track" max="{{ maior_receita }}" value="{{ item.valor }}" aria-label="Recebido em {{ meses[item.mes - 1] }} de {{ item.ano }}: {{ moeda(item.valor) }}">{{ moeda(item.valor) }}</progress>
+        <span class="chart-value">{{ moeda(item.valor) }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+  <article class="card section-gap">
+    <div class="card-heading"><div><h2>Movimentações e pendências</h2><span class="card-hint">{{ pagos|length }} recebimento(s) no período · {{ pendencias|length }} pendência(s) em aberto · {{ resumo.clientes }} hóspede(s) cadastrado(s)</span></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Pagamento / hóspede</th><th>Hospedagem</th><th>Valor</th><th>Forma</th><th>Data do recebimento</th><th>Status</th><th></th></tr></thead><tbody>
+    {% for p in pagamentos %}
+      <tr><td class="primary-cell">#{{ p.id }} · {{ p.cliente }}</td><td>#{{ p.reserva_id }}</td><td>{{ moeda(p.valor) }}</td><td>{{ p.forma }}</td><td>{{ data_br(p.recebido_em) if p.recebido_em else 'Sem recebimento' }}</td><td><span class="badge {{ 'pending' if p.status == 'Pendente' else '' }}">{{ p.status }}</span></td>
+      <td>{% if p.status == 'Pendente' %}<form method="post" action="{{ url_for('confirmar_pagamento',codigo=p.id) }}">{{ csrf() }}<button class="button secondary small">Confirmar</button></form>{% endif %}</td></tr>
+    {% else %}<tr><td colspan="7" class="empty">Não há pagamentos no período nem pendências.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </article>
+</div>
 {% endblock %}

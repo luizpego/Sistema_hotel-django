@@ -4,7 +4,8 @@ import io
 import os
 import re
 import secrets
-from datetime import timedelta
+from calendar import monthrange
+from datetime import date, timedelta
 from pathlib import Path
 
 import click
@@ -30,6 +31,8 @@ app.config.update(
 )
 HASH_INEXISTENTE = generate_password_hash(secrets.token_urlsafe(32))
 MODULOS = {'clientes': 'Hóspedes', 'quartos': 'Quartos', 'funcionarios': 'Funcionários'}
+MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+         'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
 
 @app.before_request
@@ -74,7 +77,8 @@ def cabecalhos(resposta):
 def erro_banco(erro):
     # Apenas o código técnico vai para o log; dados e credenciais não são exibidos.
     app.logger.error('Erro MySQL: %s', erro.errno)
-    return render_template('erro.html', mensagem='Banco indisponível ou operação concorrente. Tente novamente.'), 503
+    return render_template('erro.html', banco_indisponivel=True,
+                           mensagem='Banco indisponível ou operação concorrente. Tente novamente.'), 503
 
 
 @app.errorhandler(400)
@@ -144,13 +148,16 @@ def resumo():
         (SELECT COUNT(*) FROM quartos WHERE ativo=1 AND status='desocupado') AS livres,
         (SELECT COUNT(*) FROM clientes WHERE ativo=1) AS clientes,
         (SELECT COUNT(*) FROM funcionarios WHERE ativo=1) AS funcionarios,
-        (SELECT COUNT(*) FROM reservas WHERE status IN ('reservada','hospedada')) AS reservas''')[0]
+        (SELECT COUNT(*) FROM reservas WHERE status IN ('reservada','hospedada')) AS reservas,
+        (SELECT COUNT(*) FROM reservas WHERE status='hospedada') AS hospedagens''')[0]
 
 
 @app.get('/')
 def inicio():
+    hora = agora().hour
+    saudacao = 'Bom dia' if hora < 12 else 'Boa tarde' if hora < 18 else 'Boa noite'
     return render_template('index.html', pagina='inicio', titulo='Visão geral', resumo=resumo(),
-                           reservas=lista_reservas()[:5], pagamentos=lista_pagamentos()[:5])
+                           saudacao=saudacao, reservas=lista_reservas()[:5], pagamentos=lista_pagamentos()[:5])
 
 
 def mostrar_cadastro(modulo):
@@ -398,11 +405,25 @@ def confirmar_pagamento(codigo):
 @app.get('/relatorios')
 def relatorios():
     exigir_admin()
-    inicio = agora().date().replace(day=1)
-    fim = agora().date()
+    hoje = agora().date()
+    tipo_padrao = 'personalizado' if 'inicio' in request.args or 'fim' in request.args else 'mes'
+    tipo = request.args.get('tipo', tipo_padrao)
     try:
-        inicio = data(request.args.get('inicio', inicio.isoformat()), 'Data inicial')
-        fim = data(request.args.get('fim', fim.isoformat()), 'Data final')
+        if tipo not in ('mes', 'ano', 'personalizado'):
+            raise ValueError('Selecione um período válido.')
+        ano = inteiro(request.args.get('ano', hoje.year), 'Ano', 1000, 9998)
+        mes = inteiro(request.args.get('mes', hoje.month), 'Mês', 1, 12)
+        if tipo == 'personalizado':
+            inicio = data(request.args.get('inicio', hoje.replace(day=1).isoformat()), 'Data inicial')
+            fim = data(request.args.get('fim', hoje.isoformat()), 'Data final')
+        elif tipo == 'ano':
+            inicio = date(ano, 1, 1)
+            fim = date(ano, 12, 31)
+        else:
+            inicio = date(ano, mes, 1)
+            fim = date(ano, mes, monthrange(ano, mes)[1])
+        if fim == date.max:
+            raise ValueError('O período não pode terminar no último dia do ano 9999.')
         if fim < inicio or (fim - inicio).days > 3660:
             raise ValueError('Selecione um período de até dez anos, com fim posterior ao início.')
     except ValueError as erro:
@@ -413,6 +434,24 @@ def relatorios():
         (p.recebido_em >= %s AND p.recebido_em < %s) ORDER BY p.id DESC''', (inicio, fim + timedelta(days=1)))
     recebido = sum(p['valor'] for p in itens if p['status'] == 'Pago')
     pendente = sum(p['valor'] for p in itens if p['status'] == 'Pendente')
+    pagos = [p for p in itens if p['status'] == 'Pago']
+    pendencias = [p for p in itens if p['status'] == 'Pendente']
+    operacao = consultar('''SELECT
+        SUM(checkin_em >= %s AND checkin_em < %s) AS entradas,
+        SUM(checkout_em >= %s AND checkout_em < %s) AS saidas FROM reservas''',
+        (inicio, fim + timedelta(days=1), inicio, fim + timedelta(days=1)))[0]
+    # Agrupa os recebimentos por mês, incluindo meses sem movimentação.
+    receita_mensal = []
+    primeiro = inicio.replace(day=1)
+    while primeiro <= fim:
+        valor = sum(p['valor'] for p in pagos if p['recebido_em'].year == primeiro.year
+                    and p['recebido_em'].month == primeiro.month)
+        receita_mensal.append({'ano': primeiro.year, 'mes': primeiro.month,
+                               'rotulo': MESES[primeiro.month - 1][:3].lower(), 'valor': valor})
+        if primeiro.year == fim.year and primeiro.month == fim.month:
+            break
+        primeiro = date(primeiro.year + 1, 1, 1) if primeiro.month == 12 else date(primeiro.year, primeiro.month + 1, 1)
+    maior_receita = max([1] + [item['valor'] for item in receita_mensal])
     if request.args.get('formato') == 'csv':
         memoria = io.StringIO(newline='')
         escritor = csv.writer(memoria, delimiter=';')
@@ -426,7 +465,9 @@ def relatorios():
         return app.response_class('\ufeff' + memoria.getvalue(), mimetype='text/csv',
                                   headers={'Content-Disposition': 'attachment; filename=relatorio-hotel.csv'})
     return render_template('relatorios.html', pagina='relatorios', titulo='Relatórios', pagamentos=itens,
-                           inicio=inicio, fim=fim, recebido=recebido, pendente=pendente, resumo=resumo())
+                           inicio=inicio, fim=fim, recebido=recebido, pendente=pendente, resumo=resumo(),
+                           tipo=tipo, ano=ano, mes=mes, meses=MESES, pagos=pagos, pendencias=pendencias,
+                           operacao=operacao, receita_mensal=receita_mensal, maior_receita=maior_receita)
 
 
 @app.cli.command('iniciar-banco')
@@ -469,6 +510,22 @@ def desativar_usuario(login):
     """Revoga o acesso, incluindo sessões já abertas."""
     executar('UPDATE usuarios SET ativo=0 WHERE login=%s', (login.strip().lower(),))
     click.echo('Acesso desativado, se existente.')
+
+
+@app.cli.command('criar-admin')
+def criar_admin():
+    """Cria o administrador inicial usando somente configurações locais do .env."""
+    login = os.getenv('ADMIN_INITIAL_LOGIN', 'admin').strip().lower()
+    senha = os.getenv('ADMIN_INITIAL_PASSWORD', '')
+    if not re.fullmatch(r'[a-z0-9_.-]{3,60}', login) or not 12 <= len(senha) <= 128:
+        raise click.ClickException('Configure ADMIN_INITIAL_LOGIN e ADMIN_INITIAL_PASSWORD no .env; a senha precisa ter de 12 a 128 caracteres.')
+    try:
+        executar('INSERT INTO usuarios (login,senha_hash,perfil) VALUES (%s,%s,%s)',
+                 (login, generate_password_hash(senha), 'admin'))
+    except mysql.connector.IntegrityError:
+        click.echo('O login já existe. A senha, o perfil e a situação da conta foram preservados.')
+        return
+    click.echo('Administrador inicial criado. A senha foi armazenada somente como hash.')
 
 
 if __name__ == '__main__':

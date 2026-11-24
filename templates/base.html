@@ -25,13 +25,20 @@
     <div class="sidebar-note"><strong>Uma estadia especial</strong>Gerencie seu hotel com praticidade e cuidado.</div>
   </aside>
   <main class="main">
-    <header class="topbar"><div class="crumb">Hotel Barbosa / <strong>{{ titulo }}</strong></div>
-      <div class="top-actions"><span class="muted">{{ usuario.login }} · {{ usuario.perfil }}</span><div class="avatar" aria-label="Hotel Barbosa">HB</div><form method="post" action="{{ url_for('sair') }}">{{ csrf() }}<button class="button secondary small">Sair</button></form></div>
+    <header class="topbar"><div class="crumb">Hotel Barbosa / <strong id="breadcrumb">{{ titulo }}</strong></div>
+      <div class="top-actions">
+        <div class="connection"><span id="connection-dot" class="dot {{ 'offline' if banco_indisponivel else '' }}" aria-hidden="true"></span><span id="connection-text">{{ 'Banco indisponível' if banco_indisponivel else 'Banco conectado' }}</span></div>
+        <div class="avatar" aria-label="Hotel Barbosa">HB</div>
+        <form method="post" action="{{ url_for('sair') }}">{{ csrf() }}<button class="button secondary small" title="Sair da conta {{ usuario.login }}">Sair</button></form>
+      </div>
     </header>
     <div class="content">
 {% else %}<main class="login-shell"><div class="card login-card">{% endif %}
-    {% for categoria, mensagem in get_flashed_messages(with_categories=true) %}<div class="message {{ categoria }}" role="status">{{ mensagem }}</div>{% endfor %}
-    {% block conteudo %}{% endblock %}
+    {% for categoria, mensagem in get_flashed_messages(with_categories=true) %}
+      <div class="{{ 'toast show' if usuario else 'message' }} {{ categoria }}" role="status" aria-live="polite">{{ mensagem }}</div>
+    {% endfor %}
+    <section class="page active" id="page-{{ pagina|default('acesso') }}">{% block conteudo %}{% endblock %}</section>
 {% if usuario %}</div></main></div>{% else %}</div></main>{% endif %}
+<script src="{{ url_for('static',filename='interface.js') }}" defer></script>
 </body>
 </html>

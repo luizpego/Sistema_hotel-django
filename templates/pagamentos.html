@@ -1,8 +1,8 @@
 {% extends 'base.html' %}
 {% block conteudo %}
-<div class="page-heading"><div><div class="eyebrow">Financeiro</div><h1>Pagamentos</h1><p class="subtitle">Registre pagamentos e confirme os valores pendentes.</p></div></div>
+<div class="page-heading"><div><div class="eyebrow">Financeiro</div><h1>Pagamentos</h1><p class="subtitle">Registre pagamentos e atualize valores pendentes.</p></div></div>
 <div class="two-column">
-<form class="card form-card" method="post">{{ csrf() }}<h2>Novo pagamento</h2><span class="card-hint">A soma dos registros não pode superar o total contratado.</span>
+<form class="card form-card" method="post">{{ csrf() }}<h2>Novo pagamento</h2><span class="card-hint">Associe o pagamento a uma hospedagem.</span>
 <div class="form-grid"><div class="field full"><label for="reserva_id">Hospedagem</label><select id="reserva_id" name="reserva_id" required><option value="">Selecione uma reserva</option>{% for r in reservas if r.status != 'cancelada' %}<option value="{{ r.id }}">#{{ r.id }} · {{ r.cliente }} · Total {{ moeda(r.total) }}</option>{% endfor %}</select></div>
 <div class="field full"><label for="valor">Valor (R$)</label><input id="valor" name="valor" type="number" min="0.01" max="99999999.99" step="0.01" required></div>
 <div class="field full"><label for="forma">Forma de pagamento</label><select id="forma" name="forma" required><option value="">Selecione</option>{% for forma in ['Dinheiro','Cartao','PIX','Transferencia'] %}<option>{{ forma }}</option>{% endfor %}</select></div>

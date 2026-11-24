@@ -147,4 +147,25 @@ Saída antecipada mantém o total contratado; atraso na saída precisa ser trata
 responsável. Mesmo após a saída prevista, um quarto fisicamente ocupado impede novo check-in.
 Não há recuperação de senha por e-mail, MFA ou trilha completa de auditoria. A criação
 e revogação de contas são feitas pelo terminal administrativo. As listas não têm paginação.
-Relatórios usam intervalo de datas, que permite consultas mensais e anuais, sem gráficos.
+Relatórios oferecem os filtros mensal, anual e personalizado, gráfico dos recebimentos,
+exportação CSV e impressão pelo navegador.
+
+## Administrador inicial
+
+Para criar um administrador inicial com o login desejado, preencha localmente no `.env`:
+
+```dotenv
+ADMIN_INITIAL_LOGIN=admin
+ADMIN_INITIAL_PASSWORD=
+```
+
+Defina a senha no campo vazio (de 12 a 128 caracteres) e execute:
+
+```powershell
+.\.venv\Scripts\python -m flask --app app criar-admin
+```
+
+O comando usa hash de senha e preserva qualquer conta que já possua esse login,
+sem redefinir a senha, o perfil ou a situação. Remova ADMIN_INITIAL_PASSWORD do `.env`
+após a criação. A senha genérica solicitada foi criada somente na base local de prévia;
+ela não é incluída nos arquivos do Git. Use uma senha exclusiva para uso real.

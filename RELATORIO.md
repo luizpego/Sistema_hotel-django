@@ -17,7 +17,8 @@ agora salva no MySQL e utiliza formulários separados. Não foram adicionados fr
 A referência GitHub da interface não estava acessível. Foi usado o HTML fornecido
 posteriormente pelo usuário, preservando cores, marca H, menu, tipografia do sistema,
 cartões e tabelas. Como não havia arquivos de imagem nesse HTML, não há imagens externas
-pendentes de carregamento. O CSS é local e o sistema não precisa de JavaScript.
+pendentes de carregamento. O CSS é local. Um JavaScript pequeno alterna os filtros
+dos relatórios, aciona a impressão e oculta as notificações, sem controlar os dados.
 
 ## Arquivos
 
@@ -77,7 +78,8 @@ Sem estornos, emissão fiscal, integração bancária, descontos, cobrança mens
 alteração/prorrogação de reservas ou cobrança de atraso. A diária mensal é informativa.
 Check-out antecipado mantém o valor contratado; atrasos exigem tratamento operacional.
 Sem recuperação de senha por e-mail, MFA, paginação ou auditoria completa. Contas são
-criadas e revogadas pelo terminal. Relatórios usam intervalo de datas e não incluem gráficos.
+criadas e revogadas pelo terminal. Relatórios possuem filtros mensal, anual e personalizado,
+gráfico de recebimentos mensais, exportação CSV e impressão.
 Antes do uso em hotel real, configurar HTTPS, backup e políticas de operação, conforme o README.
 
 ## Git
@@ -86,3 +88,26 @@ Destino verificado: https://github.com/luizpego/Sistema_hotel-django.git
 Branch de trabalho: `main`, baseada em `0512463` (e no ancestral `423973c`).
 Mensagem de commit exigida: `interface do sistema`. Sem force push e sem envio para a referência visual.
 O resultado final do commit e do push é informado na mensagem de entrega, após a execução.
+
+## Revisão de fidelidade ao HTML e administrador inicial
+
+Nesta revisão, o painel foi alinhado aos quatro cartões do HTML fornecido: total de
+quartos, quartos livres, hóspedes cadastrados e hospedagens ativas. Ocupação,
+funcionários e reservas continuam disponíveis como indicadores complementares.
+Foram recuperados os títulos, subtítulos, placeholders, indicador de conexão,
+notificações, espaçamentos e organização dos formulários do modelo.
+Os relatórios agora incluem os filtros mensal/anual/personalizado, oito indicadores,
+gráfico mensal, confirmação de pendências, exportação e impressão, conforme a referência.
+
+Mantêm-se as adaptações necessárias: navegação com links Flask, operações protegidas
+por CSRF, campos de diária/tipo/saída prevista, ações de edição/desativação e o módulo
+de funcionários. A saudação considera o horário de São Paulo.
+
+Foi adicionado `flask --app app criar-admin`, que lê login e senha inicial do `.env`,
+salva somente hash e preserva contas existentes. O administrador genérico solicitado
+foi criado na base local de prévia. A senha não foi incluída no código nem no Git.
+
+Validação desta revisão: **14 testes de integração aprovados** em MySQL real,
+incluindo criação do administrador, idempotência, proteção contra promoção de conta
+existente, quatro cartões com ocupação real e relatórios por mês/ano/período.
+Foram verificadas datas de ano bissexto, meses sem receitas e pendências fora do período.
