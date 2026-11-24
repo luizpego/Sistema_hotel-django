@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<div class="page-heading"><div><div class="eyebrow">Financeiro</div><h1>Pagamentos</h1><p class="subtitle">Registre pagamentos e confirme os valores pendentes.</p></div></div>
+<div class="two-column">
+<form class="card form-card" method="post">{{ csrf() }}<h2>Novo pagamento</h2><span class="card-hint">A soma dos registros não pode superar o total contratado.</span>
+<div class="form-grid"><div class="field full"><label for="reserva_id">Hospedagem</label><select id="reserva_id" name="reserva_id" required><option value="">Selecione uma reserva</option>{% for r in reservas if r.status != 'cancelada' %}<option value="{{ r.id }}">#{{ r.id }} · {{ r.cliente }} · Total {{ moeda(r.total) }}</option>{% endfor %}</select></div>
+<div class="field full"><label for="valor">Valor (R$)</label><input id="valor" name="valor" type="number" min="0.01" max="99999999.99" step="0.01" required></div>
+<div class="field full"><label for="forma">Forma de pagamento</label><select id="forma" name="forma" required><option value="">Selecione</option>{% for forma in ['Dinheiro','Cartao','PIX','Transferencia'] %}<option>{{ forma }}</option>{% endfor %}</select></div>
+<div class="field full"><label for="status">Situação</label><select id="status" name="status"><option>Pendente</option><option>Pago</option></select></div></div><button class="button form-submit">＋ Registrar pagamento</button></form>
+<article class="card"><div class="card-heading"><div><h2>Movimentações</h2><span class="card-hint">{{ pagamentos|length }} pagamento(s)</span></div></div>
+<div class="table-wrap"><table><thead><tr><th>Hóspede</th><th>Hospedagem</th><th>Valor</th><th>Forma</th><th>Status</th><th>Recebimento</th><th>Ação</th></tr></thead><tbody>
+{% for p in pagamentos %}<tr><td class="primary-cell">{{ p.cliente }}</td><td>#{{ p.reserva_id }}</td><td>{{ moeda(p.valor) }}</td><td>{{ p.forma }}</td><td><span class="badge {{ 'pending' if p.status == 'Pendente' else '' }}">{{ p.status }}</span></td><td>{{ data_br(p.recebido_em) }}</td><td>{% if p.status == 'Pendente' %}<form method="post" action="{{ url_for('confirmar_pagamento',codigo=p.id) }}">{{ csrf() }}<button class="button secondary small">Confirmar</button></form>{% endif %}</td></tr>{% else %}<tr><td class="empty" colspan="7">Nenhum pagamento registrado.</td></tr>{% endfor %}
+</tbody></table></div></article></div>
+{% endblock %}

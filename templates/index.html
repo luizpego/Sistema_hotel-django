@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<div class="page-heading"><div><div class="eyebrow">Painel do hotel</div><h1>Bem-vindo ao Hotel Barbosa</h1><p class="subtitle">Aqui está o resumo da operação do hotel.</p></div><a class="button secondary" href="{{ url_for('inicio') }}">↻ Atualizar</a></div>
+<div class="stats">
+{% for icone, nome, valor in [('▦','Total de quartos',resumo.quartos),('⌂','Quartos disponíveis agora',resumo.livres),('♙','Hóspedes cadastrados',resumo.clientes),('▤','Reservas ativas',resumo.reservas),('▦','Quartos ocupados',resumo.ocupados),('♧','Funcionários ativos',resumo.funcionarios)] %}
+<article class="stat"><div class="stat-icon" aria-hidden="true">{{ icone }}</div><div><div class="stat-label">{{ nome }}</div><div class="stat-value">{{ valor }}</div></div></article>
+{% endfor %}
+</div>
+<div class="overview-grid">
+<article class="card"><div class="card-heading"><div><h2>Hospedagens recentes</h2><span class="card-hint">Acompanhe as últimas reservas e estadias</span></div><a class="button secondary small" href="{{ url_for('reservas') }}">Ver todas</a></div>
+<div class="table-wrap"><table><thead><tr><th>Hóspede</th><th>Quarto</th><th>Entrada</th><th>Status</th></tr></thead><tbody>
+{% for r in reservas %}<tr><td class="primary-cell">{{ r.cliente }}</td><td>{{ r.quarto }}</td><td>{{ data_br(r.entrada) }}</td><td><span class="badge {{ r.status }}">{{ r.status }}</span></td></tr>{% else %}<tr><td colspan="4" class="empty">Nenhuma reserva por aqui ainda.</td></tr>{% endfor %}
+</tbody></table></div></article>
+<article class="card"><div class="card-heading"><div><h2>Pagamentos recentes</h2><span class="card-hint">Últimos registros</span></div><a class="button secondary small" href="{{ url_for('pagamentos') }}">Ver todos</a></div>
+<div class="table-wrap"><table><thead><tr><th>Hóspede</th><th>Valor</th><th>Status</th></tr></thead><tbody>
+{% for p in pagamentos %}<tr><td class="primary-cell">{{ p.cliente }}</td><td>{{ moeda(p.valor) }}</td><td><span class="badge {{ 'pending' if p.status == 'Pendente' else '' }}">{{ p.status }}</span></td></tr>{% else %}<tr><td colspan="3" class="empty">Nenhum pagamento registrado.</td></tr>{% endfor %}
+</tbody></table></div></article>
+</div>
+{% endblock %}

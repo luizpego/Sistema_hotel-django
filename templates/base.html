@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f6f7fb">
+  <title>Hotel Barbosa | {{ titulo|default('Painel') }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+{% macro csrf() %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endmacro %}
+{% macro moeda(valor) %}R$ {{ '{:,.2f}'.format(valor|float).replace(',', 'X').replace('.', ',').replace('X', '.') }}{% endmacro %}
+{% macro data_br(valor) %}{{ valor.strftime('%d/%m/%Y') if valor else '—' }}{% endmacro %}
+{% if usuario %}
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark">H</div><div><div class="brand-name">Hotel Barbosa</div><div class="brand-sub">Painel de gerenciamento</div></div></div>
+    <div class="nav-label">Menu principal</div>
+    <nav class="nav" aria-label="Menu principal">
+    {% for rota, icone, nome in [('inicio','⌂','Visão geral'),('clientes','♙','Hóspedes'),('quartos','▦','Quartos'),('reservas','▤','Hospedagens'),('pagamentos','＄','Pagamentos'),('funcionarios','♧','Funcionários'),('relatorios','▥','Relatórios')] %}
+      {% if usuario.perfil == 'admin' or rota not in ['funcionarios','relatorios'] %}
+      <a href="{{ url_for(rota) }}" class="{{ 'active' if pagina == rota else '' }}" {% if pagina == rota %}aria-current="page"{% endif %}><span class="nav-icon" aria-hidden="true">{{ icone }}</span>{{ nome }}</a>
+      {% endif %}
+    {% endfor %}
+    </nav>
+    <div class="sidebar-note"><strong>Uma estadia especial</strong>Gerencie seu hotel com praticidade e cuidado.</div>
+  </aside>
+  <main class="main">
+    <header class="topbar"><div class="crumb">Hotel Barbosa / <strong>{{ titulo }}</strong></div>
+      <div class="top-actions"><span class="muted">{{ usuario.login }} · {{ usuario.perfil }}</span><div class="avatar" aria-label="Hotel Barbosa">HB</div><form method="post" action="{{ url_for('sair') }}">{{ csrf() }}<button class="button secondary small">Sair</button></form></div>
+    </header>
+    <div class="content">
+{% else %}<main class="login-shell"><div class="card login-card">{% endif %}
+    {% for categoria, mensagem in get_flashed_messages(with_categories=true) %}<div class="message {{ categoria }}" role="status">{{ mensagem }}</div>{% endfor %}
+    {% block conteudo %}{% endblock %}
+{% if usuario %}</div></main></div>{% else %}</div></main>{% endif %}
+</body>
+</html>

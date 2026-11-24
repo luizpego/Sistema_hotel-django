@@ -1,0 +1,5 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<div class="eyebrow">Hotel Barbosa</div><h1>Não foi possível concluir</h1>
+<p>{{ mensagem }}</p><a class="button" href="{{ url_for('inicio') if usuario else url_for('login') }}">Voltar ao painel</a>
+{% endblock %}

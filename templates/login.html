@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<div class="brand"><div class="brand-mark">H</div><div><div class="brand-name">Hotel Barbosa</div><div class="brand-sub">Painel de gerenciamento</div></div></div>
+<h1>Acesse seu painel</h1><p class="subtitle">Entre com o acesso fornecido pelo administrador.</p>
+<form method="post">{{ csrf() }}
+<div class="field"><label for="login">Usuário</label><input id="login" name="login" autocomplete="username" required maxlength="60" autofocus></div>
+<div class="field"><label for="senha">Senha</label><input id="senha" name="senha" type="password" autocomplete="current-password" required maxlength="128"></div>
+<button class="button form-submit" type="submit">Entrar</button>
+</form>
+{% endblock %}

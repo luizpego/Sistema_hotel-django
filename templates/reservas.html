@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<div class="page-heading"><div><div class="eyebrow">Estadias</div><h1>Hospedagens</h1><p class="subtitle">Reserve por período, registre entradas e acompanhe as estadias.</p></div></div>
+<article class="card"><h2>Consultar disponibilidade</h2><p class="card-hint">A data de saída libera o quarto para outra reserva. Ocupação física é conferida novamente no check-in.</p><form method="get" class="filter-grid"><div class="field"><label for="filtro-entrada">Entrada</label><input id="filtro-entrada" name="entrada" type="date" value="{{ entrada }}" required></div><div class="field"><label for="filtro-saida">Saída</label><input id="filtro-saida" name="saida" type="date" value="{{ saida }}" required></div><button class="button secondary">Ver quartos disponíveis</button></form></article>
+<div class="two-column section-gap">
+<form class="card form-card" method="post">{{ csrf() }}<h2>Nova reserva</h2><span class="card-hint">{{ quartos|length }} quarto(s) {{ 'disponível(is) no período consultado' if entrada and saida else 'ativo(s); consulte as datas para filtrar' }}. A disponibilidade será validada ao salvar.</span>
+<div class="form-grid">
+<div class="field full"><label for="cliente_id">Hóspede</label><select id="cliente_id" name="cliente_id" required><option value="">Selecione um hóspede</option>{% for c in clientes %}<option value="{{ c.id }}">{{ c.nome }} · {{ c.cpf }}</option>{% endfor %}</select></div>
+<div class="field full"><label for="quarto_id">Quarto</label><select id="quarto_id" name="quarto_id" required><option value="">Selecione um quarto</option>{% for q in quartos %}<option value="{{ q.id }}">Quarto {{ q.numero }} · {{ q.tipo }} · {{ moeda(q.valor_diaria) }}/dia</option>{% endfor %}</select></div>
+<div class="field"><label for="entrada">Entrada</label><input id="entrada" name="entrada" type="date" value="{{ entrada or hoje }}" required min="{{ hoje }}"></div><div class="field"><label for="saida">Saída prevista</label><input id="saida" name="saida" type="date" value="{{ saida }}" required min="{{ hoje }}"></div>
+<div class="field full"><label for="funcionario_id">Funcionário responsável (opcional)</label><select id="funcionario_id" name="funcionario_id"><option value="">Sem responsável associado</option>{% for f in funcionarios %}<option value="{{ f.id }}">{{ f.nome }}</option>{% endfor %}</select></div>
+</div><button class="button form-submit">＋ Criar reserva</button></form>
+<article class="card"><div class="card-heading"><div><h2>Histórico de hospedagens</h2><span class="card-hint">{{ reservas|length }} registro(s). Valor: noites reservadas × diária contratada.</span></div></div>
+<div class="table-wrap"><table><thead><tr><th>Reserva / hóspede</th><th>Quarto</th><th>Entrada</th><th>Saída prevista</th><th>Total</th><th>Responsável</th><th>Status</th><th>Ações</th></tr></thead><tbody>
+{% for r in reservas %}<tr><td class="primary-cell">#{{ r.id }} · {{ r.cliente }}</td><td>{{ r.quarto }}</td><td>{{ data_br(r.entrada) }}</td><td>{{ data_br(r.saida) }}</td><td>{{ moeda(r.total) }}</td><td>{{ r.funcionario or '—' }}</td><td><span class="badge {{ r.status }}">{{ r.status }}</span>{% if r.checkout_em %}<div class="muted">Saída real: {{ data_br(r.checkout_em) }}</div>{% endif %}</td><td><div class="actions">
+{% if r.status == 'reservada' %}{% if r.entrada <= hoje < r.saida %}<form method="post" action="{{ url_for('acao_reserva',codigo=r.id,acao='checkin') }}">{{ csrf() }}<button class="button small">Check-in</button></form>{% endif %}<form method="post" action="{{ url_for('acao_reserva',codigo=r.id,acao='cancelar') }}">{{ csrf() }}<button class="button danger small">Cancelar</button></form>{% elif r.status == 'hospedada' %}<form method="post" action="{{ url_for('acao_reserva',codigo=r.id,acao='checkout') }}">{{ csrf() }}<button class="button secondary small">Check-out</button></form>{% endif %}
+</div></td></tr>{% else %}<tr><td class="empty" colspan="8">Nenhuma reserva cadastrada.</td></tr>{% endfor %}
+</tbody></table></div></article>
+</div>
+{% endblock %}
